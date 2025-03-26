@@ -86,7 +86,7 @@ def calculate_metrics(prices, forecasts):
         }
     }
 
-def run_forecasts(instruments=['SPX', 'NDX', 'SMH', 'GC', 'XLE','CVX', 'XOM', 'DBC','BTCUSD'], start_year=1962, subfolder='stevenmichiels.github.io'):
+def run_forecasts(instruments=['SPX', 'NDX', 'SMH', 'GC', 'XLE','CVX', 'XOM', 'DBC','BTCUSD'], start_year=1962, subfolder='trendfolio.github.io'):
     """Run forecasts for multiple instruments and combine results into a single JSON file"""
     # Read the CSV file
     base_path = f'/Users/stevenmichiels/Repos/{subfolder}'
