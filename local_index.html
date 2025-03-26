@@ -142,16 +142,20 @@
         <h1><img src="favicon.ico" alt="Icon" style="height: 85px; vertical-align: middle; margin-right: 40px;">Market Trend Signals (Local)</h1>
     </div>
     <div class="container">
+        <h1>Forecast Data Viewer</h1>
+        <div id="error" class="error"></div>
+        <div id="debug" style="white-space: pre; font-family: monospace;"></div>
+        <div id="metadata" class="metadata"></div>
         <div class="table-container">
             <table id="instrumentTable">
                 <thead>
                     <tr>
                         <th>Instrument</th>
                         <th>Trend</th>
+                        <th>Last Value</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <!-- Table rows will be populated by JavaScript -->
+                <tbody id="dataTable">
                 </tbody>
             </table>
         </div>
@@ -166,27 +170,49 @@
         let currentData = null;
         let selectedInstrument = null;
 
-        // Fetch and process the forecast data
-        async function loadForecastData() {
+        async function loadData() {
             try {
-                console.log('Attempting to fetch forecast data...');
                 const response = await fetch('forecast_data.json');
-                console.log('Response received:', response);
-                const data = await response.json();
-                console.log('Parsed data:', data);
-                currentData = data;
-                populateTable(data);
+                const text = await response.text(); // Get raw text first
                 
-                // Automatically select SPX after loading data
-                if (data.instruments && data.instruments.SPX) {
-                    selectInstrument('SPX');
-                }
+                // Debug: Show first 500 characters of raw JSON
+                document.getElementById('debug').textContent = 
+                    `First 500 chars of JSON:\n${text.substring(0, 500)}`;
+                
+                const data = JSON.parse(text); // Parse the text to JSON
+                
+                // Display metadata
+                const metadata = data.metadata || {};
+                document.getElementById('metadata').innerHTML = `
+                    <h3>Metadata</h3>
+                    <p>Last Update: ${metadata.last_update || 'N/A'}</p>
+                    <p>Start Year: ${metadata.start_year || 'N/A'}</p>
+                    <p>Number of Instruments: ${(metadata.instruments || []).length}</p>
+                `;
+
+                // Display instruments data
+                const tableBody = document.getElementById('dataTable');
+                Object.entries(data.instruments || {}).forEach(([instrument, instrumentData]) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${instrument || 'Unknown'}</td>
+                        <td>${(instrumentData && instrumentData.trend) || 'N/A'}</td>
+                        <td>${(instrumentData && instrumentData.dates && 
+                              instrumentData.dates.length > 0) ? 
+                              instrumentData.dates[instrumentData.dates.length-1] : 'N/A'}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
             } catch (error) {
-                console.error('Detailed error loading forecast data:', error);
-                document.querySelector('#instrumentTable tbody').innerHTML = 
-                    `<tr><td colspan="2">Error loading data: ${error.message}</td></tr>`;
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = 
+                    `Error loading data: ${error.message}\n` +
+                    `Make sure forecast_data.json is in the same directory and is valid JSON.`;
             }
         }
+
+        // Load data when page loads
+        window.addEventListener('load', loadData);
 
         function populateTable(data) {
             const tbody = document.querySelector('#instrumentTable tbody');
@@ -673,9 +699,6 @@
             priceChart.on('plotly_relayout', debouncedUpdateForecast);
             forecastChart.on('plotly_relayout', debouncedUpdatePrice);
         }
-
-        // Load data when page loads
-        document.addEventListener('DOMContentLoaded', loadForecastData);
     </script>
 </body>
 </html> 
